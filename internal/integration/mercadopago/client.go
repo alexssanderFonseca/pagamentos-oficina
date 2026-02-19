@@ -27,7 +27,7 @@ func NewClient() *Client {
 type OrderRequest struct {
 	Type              string       `json:"type"`
 	ExternalReference string       `json:"external_reference"`
-	TotalAmount       float64      `json:"total_amount"`
+	TotalAmount       string       `json:"total_amount"`
 	Description       string       `json:"description"`
 	Items             []Item       `json:"items"`
 	Config            OrderConfig  `json:"config"`
@@ -48,14 +48,14 @@ type Transactions struct {
 }
 
 type TransactionPayment struct {
-	Amount float64 `json:"amount"`
+	Amount string `json:"amount"`
 }
 
 type Item struct {
-	Title       string  `json:"title"`
-	UnitPrice   float64 `json:"unit_price"`
-	Quantity    int     `json:"quantity"`
-	UnitMeasure string  `json:"unit_measure"`
+	Title       string `json:"title"`
+	UnitPrice   string `json:"unit_price"`
+	Quantity    int    `json:"quantity"`
+	UnitMeasure string `json:"unit_measure"`
 }
 
 type OrderResponse struct {
@@ -71,10 +71,12 @@ func (c *Client) CreateQRCodeOrder(ctx context.Context, req domain.CreatePayment
 	posID := os.Getenv("MERCADO_PAGO_POS_ID")
 	url := fmt.Sprintf("%s/v1/orders", c.baseURL)
 
+	amountStr := fmt.Sprintf("%.2f", req.Amount)
+
 	orderReq := OrderRequest{
 		Type:              "qr",
 		ExternalReference: req.ExternalReference,
-		TotalAmount:       req.Amount,
+		TotalAmount:       amountStr,
 		Description:       req.Description,
 		Config: OrderConfig{
 			QR: QRConfig{
@@ -84,13 +86,13 @@ func (c *Client) CreateQRCodeOrder(ctx context.Context, req domain.CreatePayment
 		},
 		Transactions: Transactions{
 			Payments: []TransactionPayment{
-				{Amount: req.Amount},
+				{Amount: amountStr},
 			},
 		},
 		Items: []Item{
 			{
 				Title:       req.Description,
-				UnitPrice:   req.Amount,
+				UnitPrice:   amountStr,
 				Quantity:    1,
 				UnitMeasure: "unit",
 			},
