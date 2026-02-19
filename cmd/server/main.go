@@ -11,8 +11,10 @@ import (
 	"github.com/alexssanderFonseca/pagamento/internal/logger"
 	repo "github.com/alexssanderFonseca/pagamento/internal/repository/dynamodb"
 	"github.com/alexssanderFonseca/pagamento/internal/service"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
 
@@ -34,16 +36,28 @@ import (
 // @securityDefinitions.basic  BasicAuth
 
 func main() {
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		logger.Info("No .env file found, relying on environment variables")
+	}
+
 	ctx := context.Background()
 
 	// AWS Config
-	cfg, err := config.LoadDefaultConfig(ctx)
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion(os.Getenv("AWS_REGION")),
+	)
 	if err != nil {
 		logger.Fatal("unable to load SDK config", zap.Error(err))
 	}
 
 	// DynamoDB Client
-	dbClient := dynamodb.NewFromConfig(cfg)
+	awsEndpoint := os.Getenv("AWS_ENDPOINT")
+	dbClient := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) {
+		if awsEndpoint != "" {
+			o.BaseEndpoint = aws.String(awsEndpoint)
+		}
+	})
 	
 	// SNS Client
 	snsClient := sns.NewClient(cfg)
