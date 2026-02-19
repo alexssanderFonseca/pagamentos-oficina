@@ -6,10 +6,14 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func SetupRouter(paymentHandler *handler.PaymentHandler) *gin.Engine {
 	r := gin.Default()
+
+	// OpenTelemetry Middleware
+	r.Use(otelgin.Middleware("pagamento"))
 
 	// Swagger route
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

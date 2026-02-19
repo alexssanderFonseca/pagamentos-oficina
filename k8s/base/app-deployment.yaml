@@ -11,6 +11,10 @@ spec:
     metadata:
       labels:
         app: pagamento-app
+        admission.datadoghq.com/enabled: "true"
+        tags.datadoghq.com/service: "pagamento"
+        tags.datadoghq.com/env: "local"
+        tags.datadoghq.com/version: "1.0.0"
     spec:
       containers:
       - name: pagamento-app
@@ -18,6 +22,36 @@ spec:
         ports:
         - containerPort: 8080
         env:
+        - name: DD_SERVICE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/service']
+        - name: DD_ENV
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/env']
+        - name: DD_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/version']
+        - name: OTEL_SERVICE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/service']
+        - name: OTEL_ENVIRONMENT
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/env']
+        - name: OTEL_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/version']
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://$(DD_AGENT_HOST):4318"
+        - name: DD_AGENT_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
         - name: PORT
           value: "8080"
         - name: MERCADO_PAGO_ACCESS_TOKEN

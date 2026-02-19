@@ -6,6 +6,7 @@ import (
 
 	"github.com/alexssanderFonseca/pagamento/internal/api"
 	"github.com/alexssanderFonseca/pagamento/internal/api/handler"
+	"github.com/alexssanderFonseca/pagamento/internal/telemetry"
 	"github.com/alexssanderFonseca/pagamento/internal/integration/mercadopago"
 	"github.com/alexssanderFonseca/pagamento/internal/integration/sns"
 	"github.com/alexssanderFonseca/pagamento/internal/logger"
@@ -42,6 +43,17 @@ func main() {
 	}
 
 	ctx := context.Background()
+
+	// Initialize Telemetry
+	shutdown, err := telemetry.InitProvider()
+	if err != nil {
+		logger.Fatal("failed to initialize telemetry", zap.Error(err))
+	}
+	defer func() {
+		if err := shutdown(ctx); err != nil {
+			logger.Error("failed to shutdown telemetry", zap.Error(err))
+		}
+	}()
 
 	// AWS Config
 	cfg, err := config.LoadDefaultConfig(ctx,
