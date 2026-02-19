@@ -1,12 +1,18 @@
 package api
 
 import (
+	_ "github.com/alexssanderFonseca/pagamento/docs"
 	"github.com/alexssanderFonseca/pagamento/internal/api/handler"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func SetupRouter(paymentHandler *handler.PaymentHandler) *gin.Engine {
 	r := gin.Default()
+
+	// Swagger route
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
@@ -18,8 +24,6 @@ func SetupRouter(paymentHandler *handler.PaymentHandler) *gin.Engine {
 		payments := v1.Group("/pagamentos")
 		{
 			payments.POST("", paymentHandler.CreatePayment)
-			// Aqui você pode adicionar outras rotas como:
-			// payments.GET("/:id", paymentHandler.GetPayment)
 		}
 
 		// Rota para Webhooks do Mercado Pago

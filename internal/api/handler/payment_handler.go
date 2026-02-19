@@ -31,6 +31,17 @@ func NewPaymentHandler(service PaymentService) *PaymentHandler {
 	}
 }
 
+// CreatePayment godoc
+// @Summary      Criar um novo pagamento
+// @Description  Gera um QR Code no Mercado Pago para uma ordem de serviço
+// @Tags         pagamentos
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.CreatePaymentRequest  true  "Dados do Pagamento"
+// @Success      201      {object}  domain.Payment
+// @Failure      400      {object}  map[string]string
+// @Failure      500      {object}  map[string]string
+// @Router       /pagamentos [post]
 func (h *PaymentHandler) CreatePayment(c *gin.Context) {
 	var req domain.CreatePaymentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -47,6 +58,18 @@ func (h *PaymentHandler) CreatePayment(c *gin.Context) {
 	c.JSON(http.StatusCreated, payment)
 }
 
+// HandleWebhook godoc
+// @Summary      Receber notificação do Mercado Pago
+// @Description  Processa o status do pagamento via webhook assinado
+// @Tags         webhooks
+// @Accept       json
+// @Produce      json
+// @Param        X-Signature  header    string  true  "Assinura HMAC-SHA256"
+// @Param        notification body      domain.MPWebhookNotification  true  "Notificação MP"
+// @Success      200      {object}  map[string]string
+// @Failure      401      {object}  map[string]string
+// @Failure      500      {object}  map[string]string
+// @Router       /webhooks/mercadopago [post]
 func (h *PaymentHandler) HandleWebhook(c *gin.Context) {
 	var notification domain.MPWebhookNotification
 	if err := c.ShouldBindJSON(&notification); err != nil {
@@ -75,8 +98,6 @@ func (h *PaymentHandler) HandleWebhook(c *gin.Context) {
 func (h *PaymentHandler) validateSignature(c *gin.Context, notification domain.MPWebhookNotification) bool {
 	secret := os.Getenv("MERCADO_PAGO_WEBHOOK_SECRET")
 	if secret == "" {
-		// Se não houver secret configurado, deixamos passar (útil para desenvolvimento inicial)
-		// Mas em produção, isso deve ser obrigatório.
 		return true
 	}
 
@@ -85,7 +106,6 @@ func (h *PaymentHandler) validateSignature(c *gin.Context, notification domain.M
 		return false
 	}
 
-	// O formato esperado do header é: ts=TIMESTAMP,v1=HASH
 	parts := strings.Split(signatureHeader, ",")
 	var ts, hash string
 	for _, part := range parts {
@@ -104,8 +124,6 @@ func (h *PaymentHandler) validateSignature(c *gin.Context, notification domain.M
 		return false
 	}
 
-	// O manifesto para assinar é: id:ID_DA_NOTIFICACAO;ts:TIMESTAMP;
-	// O ID vem do campo data.id da notificação
 	manifest := fmt.Sprintf("id:%s;ts:%s;", notification.Data.ID, ts)
 
 	mac := hmac.New(sha256.New, []byte(secret))

@@ -1,0 +1,156 @@
+basePath: /v1
+definitions:
+  domain.CreatePaymentRequest:
+    properties:
+      amount:
+        type: number
+      description:
+        type: string
+      external_reference:
+        type: string
+    required:
+    - amount
+    - description
+    - external_reference
+    type: object
+  domain.MPWebhookNotification:
+    properties:
+      action:
+        type: string
+      api_version:
+        type: string
+      data:
+        properties:
+          id:
+            type: string
+        type: object
+      date_created:
+        type: string
+      id: {}
+      live_mode:
+        type: boolean
+      type:
+        type: string
+      user_id:
+        type: string
+    type: object
+  domain.Payment:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      external_reference:
+        type: string
+      id:
+        type: string
+      qr_code:
+        type: string
+      status:
+        $ref: '#/definitions/domain.PaymentStatus'
+      updated_at:
+        type: string
+    type: object
+  domain.PaymentStatus:
+    enum:
+    - pending
+    - approved
+    - rejected
+    type: string
+    x-enum-varnames:
+    - StatusPending
+    - StatusApproved
+    - StatusRejected
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: Serviço de processamento de pagamentos para a Oficina.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Pagamento API
+  version: "1.0"
+paths:
+  /pagamentos:
+    post:
+      consumes:
+      - application/json
+      description: Gera um QR Code no Mercado Pago para uma ordem de serviço
+      parameters:
+      - description: Dados do Pagamento
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreatePaymentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Payment'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Criar um novo pagamento
+      tags:
+      - pagamentos
+  /webhooks/mercadopago:
+    post:
+      consumes:
+      - application/json
+      description: Processa o status do pagamento via webhook assinado
+      parameters:
+      - description: Assinura HMAC-SHA256
+        in: header
+        name: X-Signature
+        required: true
+        type: string
+      - description: Notificação MP
+        in: body
+        name: notification
+        required: true
+        schema:
+          $ref: '#/definitions/domain.MPWebhookNotification'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Receber notificação do Mercado Pago
+      tags:
+      - webhooks
+securityDefinitions:
+  BasicAuth:
+    type: basic
+swagger: "2.0"
