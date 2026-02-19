@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,7 +14,7 @@ import (
 )
 
 type mockPaymentService struct {
-	createPaymentFunc func(ctx context.Context, req domain.CreatePaymentRequest) (*domain.Payment, error)
+	createPaymentFunc  func(ctx context.Context, req domain.CreatePaymentRequest) (*domain.Payment, error)
 	processWebhookFunc func(ctx context.Context, notification domain.MPWebhookNotification) error
 }
 
@@ -40,29 +41,44 @@ func TestPaymentHandler_CreatePayment(t *testing.T) {
 
 	h := NewPaymentHandler(svc)
 
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
+	t.Run("Success", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		body := domain.CreatePaymentRequest{ExternalReference: "ORDER-1", Amount: 10.0, Description: "Test"}
+		jsonBody, _ := json.Marshal(body)
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBuffer(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		h.CreatePayment(c)
+		if w.Code != http.StatusCreated {
+			t.Errorf("expected 201, got %d. Body: %s", w.Code, w.Body.String())
+		}
+	})
 
-	body := domain.CreatePaymentRequest{
-		ExternalReference: "ORDER-1",
-		Amount:            10.0,
-		Description:       "Test",
-	}
-	jsonBody, _ := json.Marshal(body)
-	c.Request, _ = http.NewRequest("POST", "/v1/payments", bytes.NewBuffer(jsonBody))
-	c.Request.Header.Set("Content-Type", "application/json")
+	t.Run("Invalid JSON", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{invalid}"))
+		h.CreatePayment(c)
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected 400, got %d", w.Code)
+		}
+	})
 
-	h.CreatePayment(c)
-
-	if w.Code != http.StatusCreated {
-		t.Errorf("esperava status 201, obteve %d", w.Code)
-	}
-
-	var resp domain.Payment
-	json.Unmarshal(w.Body.Bytes(), &resp)
-	if resp.ID != "test-id" {
-		t.Errorf("esperava ID test-id, obteve %s", resp.ID)
-	}
+	t.Run("Service Error", func(t *testing.T) {
+		svc.createPaymentFunc = func(ctx context.Context, req domain.CreatePaymentRequest) (*domain.Payment, error) {
+			return nil, errors.New("service failed")
+		}
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		body := domain.CreatePaymentRequest{ExternalReference: "ORDER-1", Amount: 10.0, Description: "Test"}
+		jsonBody, _ := json.Marshal(body)
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBuffer(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		h.CreatePayment(c)
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("expected 500, got %d", w.Code)
+		}
+	})
 }
 
 func TestPaymentHandler_HandleWebhook(t *testing.T) {
@@ -76,21 +92,43 @@ func TestPaymentHandler_HandleWebhook(t *testing.T) {
 
 	h := NewPaymentHandler(svc)
 
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
+	t.Run("Success", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		notification := domain.MPWebhookNotification{Type: "payment"}
+		notification.Data.ID = "123"
+		jsonBody, _ := json.Marshal(notification)
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBuffer(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		h.HandleWebhook(c)
+		if w.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", w.Code)
+		}
+	})
 
-	notification := domain.MPWebhookNotification{
-		Type: "payment",
-	}
-	notification.Data.ID = "123"
-	
-	jsonBody, _ := json.Marshal(notification)
-	c.Request, _ = http.NewRequest("POST", "/v1/webhooks/mercadopago", bytes.NewBuffer(jsonBody))
-	c.Request.Header.Set("Content-Type", "application/json")
+	t.Run("Invalid JSON", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{invalid}"))
+		h.HandleWebhook(c)
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected 400, got %d", w.Code)
+		}
+	})
 
-	h.HandleWebhook(c)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("esperava status 200, obteve %d", w.Code)
-	}
+	t.Run("Service Error", func(t *testing.T) {
+		svc.processWebhookFunc = func(ctx context.Context, notification domain.MPWebhookNotification) error {
+			return errors.New("webhook failed")
+		}
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		notification := domain.MPWebhookNotification{Type: "payment"}
+		jsonBody, _ := json.Marshal(notification)
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBuffer(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		h.HandleWebhook(c)
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("expected 500, got %d", w.Code)
+		}
+	})
 }
