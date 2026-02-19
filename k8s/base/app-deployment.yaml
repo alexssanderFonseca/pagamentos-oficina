@@ -47,7 +47,7 @@ spec:
             fieldRef:
               fieldPath: metadata.labels['tags.datadoghq.com/version']
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
-          value: "http://$(DD_AGENT_HOST):4318"
+          value: "$(DD_AGENT_HOST):4318"
         - name: DD_AGENT_HOST
           valueFrom:
             fieldRef:
@@ -89,3 +89,18 @@ spec:
             configMapKeyRef:
               name: pagamento-config
               key: aws_sns_topic_arn
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: pagamento-secret
+              key: aws_access_key_id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: pagamento-secret
+              key: aws_secret_access_key
+        - name: AWS_SESSION_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: pagamento-secret
+              key: aws_session_token
