@@ -4,6 +4,10 @@ resources:
 
 namespace: oficina-ns
 
+commonLabels:
+  tags.datadoghq.com/env: "prod"
+  tags.datadoghq.com/version: "1.0.0"
+
 images:
   - name: pagamento-app
     newName: alexmarquesfa/pagamento-app # Adjust to your dockerhub user
