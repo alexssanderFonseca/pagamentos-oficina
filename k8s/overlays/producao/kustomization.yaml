@@ -1,0 +1,10 @@
+resources:
+  - ../../base
+  - namespace.yaml
+
+namespace: pagamento
+
+images:
+  - name: pagamento-app
+    newName: alexmarquesfa/pagamento-app # Adjust to your dockerhub user
+    newTag: latest

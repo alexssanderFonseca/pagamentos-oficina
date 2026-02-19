@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pagamento-config
+data:
+  mercadopago_user_id: "3207195691"
+  mercadopago_pos_id: "TESTE"
+  dynamodb_table_name: "Payments"
+  aws_region: "us-east-1"
+  aws_sns_topic_arn: "arn:aws:sns:us-east-1:602900801621:sns-pagamentos-notifacoes"

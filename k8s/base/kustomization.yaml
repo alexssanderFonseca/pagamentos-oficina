@@ -1,0 +1,5 @@
+resources:
+  - app-deployment.yaml
+  - app-service.yaml
+  - app-configmap.yaml
+  - pagamento-secret.yaml

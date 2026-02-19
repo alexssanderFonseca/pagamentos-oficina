@@ -1,0 +1,37 @@
+name: CD Pipeline - Deploy Pagamento
+
+on:
+  push:
+    branches:
+      - 'main'
+
+permissions:
+  packages: write
+  contents: write
+
+jobs:
+  publish-image:
+    name: Publicar Imagem Pagamento no Docker Hub
+    uses: ./.github/workflows/reusable-publish-docker.yml
+    secrets: inherit
+    with:
+      image-name: alexmarquesfa/pagamento-app
+
+  deploy-application:
+    name: Deploy da Aplicação Pagamento no Kubernetes
+    needs: [publish-image]
+    uses: ./.github/workflows/reusable-deploy-k8s.yml
+    with:
+      image-tag: ${{ needs.publish-image.outputs.image-tag }}
+      environment: producao
+      app-name: pagamento-app
+      k8s-overlay-path: k8s/overlays/producao
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      MERCADOPAGO_ACCESS_TOKEN: ${{ secrets.MERCADO_PAGO_ACCESS_TOKEN }}
+      MERCADOPAGO_WEBHOOK_SECRET: ${{ secrets.MERCADO_PAGO_WEBHOOK_SECRET }}

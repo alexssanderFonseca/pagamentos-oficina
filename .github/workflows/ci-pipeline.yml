@@ -1,0 +1,21 @@
+name: CI Pipeline - Pagamento
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+
+jobs:
+  build-and-test:
+    name: Build e Testes - Pagamento
+    uses: ./.github/workflows/reusable-build-go.yml
+    secrets: inherit
+
+  validate-docker:
+    name: Validação Docker - Pagamento
+    needs: build-and-test
+    uses: ./.github/workflows/reusable-docker.yml
+    secrets: inherit
+    with:
+      context: .
+      dockerfile: Dockerfile

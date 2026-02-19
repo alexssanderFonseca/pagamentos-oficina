@@ -1,0 +1,77 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'The deployment environment (e.g., producao, homolog)'
+        required: true
+        type: string
+      image-tag:
+        description: 'Docker image tag to deploy'
+        required: true
+        type: string
+      app-name:
+        description: 'The name of the application/microservice to deploy (e.g., catalogo-app)'
+        required: true
+        type: string
+      k8s-overlay-path:
+        description: 'The path to the Kubernetes Kustomize overlay for this application (e.g., k8s/overlays/prod)'
+        required: true
+        type: string
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      AWS_REGION:
+        required: true
+      EKS_CLUSTER_NAME:
+        required: true
+      AWS_SESSION_TOKEN:
+        required: false
+      MERCADOPAGO_ACCESS_TOKEN:
+        required: true
+      MERCADOPAGO_WEBHOOK_SECRET:
+        required: true
+      DOCKER_USERNAME:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Credenciais AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+
+      - name: Configurar Kubeconfig
+        run: aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }}
+
+      - name: Setup Kustomize
+        run: |
+          KUSTOMIZE_VERSION="5.8.0"
+          KUSTOMIZE_RELEASE_URL="https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+          curl -sL "${KUSTOMIZE_RELEASE_URL}" -o kustomize.tar.gz
+          tar -xzf kustomize.tar.gz
+          chmod +x kustomize
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Substituir IMAGE_TAG no Deployment
+        run: |
+          kustomize edit set image pagamento-app=${{ secrets.DOCKER_USERNAME }}/pagamento-app:${{ inputs.image-tag }}
+        working-directory: ${{ inputs.k8s-overlay-path }}
+
+      - name: Aplicar Kustomize e Injetar Segredos
+        run: |
+          kustomize build ${{ inputs.k8s-overlay-path }} | 
+          sed "s|MERCADOPAGO_ACCESS_TOKEN_PLACEHOLDER|$(echo -n "${{ secrets.MERCADOPAGO_ACCESS_TOKEN }}" | base64 -w 0)|g" | 
+          sed "s|MERCADOPAGO_WEBHOOK_SECRET_PLACEHOLDER|$(echo -n "${{ secrets.MERCADOPAGO_WEBHOOK_SECRET }}" | base64 -w 0)|g" | 
+          kubectl apply -f -

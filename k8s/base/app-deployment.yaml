@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pagamento-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pagamento-app
+  template:
+    metadata:
+      labels:
+        app: pagamento-app
+    spec:
+      containers:
+      - name: pagamento-app
+        image: pagamento-app
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          value: "8080"
+        - name: MERCADO_PAGO_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: pagamento-secret
+              key: mercadopago_access_token
+        - name: MERCADO_PAGO_USER_ID
+          valueFrom:
+            configMapKeyRef:
+              name: pagamento-config
+              key: mercadopago_user_id
+        - name: MERCADO_PAGO_POS_ID
+          valueFrom:
+            configMapKeyRef:
+              name: pagamento-config
+              key: mercadopago_pos_id
+        - name: MERCADO_PAGO_WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: pagamento-secret
+              key: mercadopago_webhook_secret
+        - name: DYNAMODB_TABLE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: pagamento-config
+              key: dynamodb_table_name
+        - name: AWS_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: pagamento-config
+              key: aws_region
+        - name: AWS_SNS_TOPIC_ARN
+          valueFrom:
+            configMapKeyRef:
+              name: pagamento-config
+              key: aws_sns_topic_arn

@@ -1,0 +1,36 @@
+name: Docker Phase
+
+on:
+  workflow_call:
+    inputs:
+      context:
+        description: 'The build context for the Docker image'
+        required: false
+        type: string
+        default: '.'
+      dockerfile:
+        description: 'The path to the Dockerfile'
+        required: false
+        type: string
+        default: './Dockerfile'
+
+jobs:
+  validate-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validar build da imagem Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          push: false
+          tags: pagamento-app:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

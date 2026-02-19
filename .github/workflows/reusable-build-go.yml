@@ -1,0 +1,44 @@
+name: Build Phase Go
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: 'The working directory for the build'
+        required: false
+        type: string
+        default: '.'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.4'
+          cache: true
+
+      - name: Baixar dependências
+        run: go mod download
+        working-directory: ${{ inputs.working-directory }}
+
+      - name: Executar testes
+        run: go test ./...
+        working-directory: ${{ inputs.working-directory }}
+
+      - name: Executar build
+        run: go build -o main ./cmd/server/main.go
+        working-directory: ${{ inputs.working-directory }}
+
+      - name: Upload de artefatos
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: build-artifacts
+          path: ${{ inputs.working-directory }}/main
+          retention-days: 5
