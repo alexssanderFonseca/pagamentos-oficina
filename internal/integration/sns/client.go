@@ -8,6 +8,7 @@ import (
 	"github.com/alexssanderFonseca/pagamento/internal/domain"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
+	"github.com/aws/aws-sdk-go-v2/service/sns/types"
 )
 
 type Client struct {
@@ -31,7 +32,7 @@ func (c *Client) PublishPaymentProcessed(ctx context.Context, event domain.Payme
 	_, err = c.snsClient.Publish(ctx, &sns.PublishInput{
 		Message:  aws.String(string(payload)),
 		TopicArn: aws.String(c.topicARN),
-		MessageAttributes: map[string]sns.MessageAttributesValue{
+		MessageAttributes: map[string]types.MessageAttributeValue{
 			"event_type": {
 				DataType:    aws.String("String"),
 				StringValue: aws.String("payment_processed"),

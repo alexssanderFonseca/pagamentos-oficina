@@ -20,16 +20,14 @@ func setupTestDB(t *testing.T) (*dynamodb.Client, string) {
 	// Configuração para o LocalStack
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion("us-east-1"),
-		config.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(
-			func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-				return aws.Endpoint{URL: "http://localhost:4566"}, nil
-			})),
 	)
 	if err != nil {
-		t.Skip("LocalStack não disponível, pulando teste de integração")
+		t.Skip("Falha ao carregar config AWS, pulando teste de integração")
 	}
 
-	client := dynamodb.NewFromConfig(cfg)
+	client := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) {
+		o.BaseEndpoint = aws.String("http://localhost:4566")
+	})
 
 	// Criar tabela para o teste
 	_, err = client.CreateTable(ctx, &dynamodb.CreateTableInput{
@@ -61,17 +59,16 @@ func setupTestDB(t *testing.T) (*dynamodb.Client, string) {
 	})
 
 	if err != nil {
-		// Se a tabela já existir, ignoramos o erro (ou deletamos e criamos de novo)
-		t.Logf("Aviso ao criar tabela: %v", err)
+		t.Logf("Aviso ao criar tabela (pode já existir): %v", err)
 	}
 
 	return client, tableName
 }
 
 func TestPaymentRepository_Integration(t *testing.T) {
-	// Pula se for rodado apenas testes unitários
-	if testing.Short() {
-		t.Skip("Pulando teste de integração")
+	// Pula por padrão no CI se não houver LocalStack
+	if os.Getenv("CI") != "" || testing.Short() {
+		t.Skip("Pulando teste de integração (ambiente CI ou flag -short)")
 	}
 
 	client, tableName := setupTestDB(t)
