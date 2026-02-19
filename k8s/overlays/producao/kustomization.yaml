@@ -2,7 +2,7 @@ resources:
   - ../../base
   - namespace.yaml
 
-namespace: pagamento
+namespace: oficina-ns
 
 images:
   - name: pagamento-app
