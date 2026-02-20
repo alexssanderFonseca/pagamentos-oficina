@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arquitetura Oficina — AWS Style</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Amazon+Ember:wght@400;700&family=Noto+Sans:wght@400;600;700&display=swap');
+
+:root {
+  --aws-orange: #FF9900;
+  --aws-dark: #232F3E;
+  --aws-dark2: #1a2332;
+  --aws-blue: #1A73E8;
+  --aws-teal: #00A591;
+  --aws-purple: #8C4FFF;
+  --aws-red: #D13212;
+  --aws-green: #1D8102;
+  --aws-light-bg: #F2F3F3;
+  --aws-white: #FFFFFF;
+  --aws-border: #D5DBDB;
+  --aws-border2: #AAB7B8;
+  --aws-text: #16191F;
+  --aws-text-light: #545B64;
+  --aws-cloud-bg: #E8F4FD;
+  --aws-cloud-border: #147EBA;
+  --aws-k8s-bg: #EBF5FB;
+  --aws-k8s-border: #1A73E8;
+  --aws-security-bg: #FDF2E9;
+  --aws-security-border: #E67E22;
+  --aws-ms-bg: #EAF7F7;
+  --aws-ms-border: #00A591;
+  --aws-async-bg: #FEF9E7;
+  --aws-async-border: #F39C12;
+  --aws-obs-bg: #F4ECF7;
+  --aws-obs-border: #8E44AD;
+  --aws-db-bg: #EBF5FB;
+  --aws-db-border: #1A5276;
+  --aws-ext-bg: #FDFDFD;
+  --aws-ext-border: #AAB7B8;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--aws-light-bg);
+  color: var(--aws-text);
+  font-family: 'Noto Sans', 'Amazon Ember', sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Header bar */
+.topbar {
+  background: var(--aws-dark);
+  padding: 0 32px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.aws-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aws-logo-mark {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--aws-orange);
+  letter-spacing: -1px;
+  font-family: 'Noto Sans', sans-serif;
+}
+
+.aws-logo-text {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  opacity: 0.9;
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255,255,255,.2);
+}
+
+.topbar-title {
+  color: rgba(255,255,255,.8);
+  font-size: 13px;
+}
+
+.topbar-badge {
+  margin-left: auto;
+  background: var(--aws-orange);
+  color: var(--aws-dark);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+}
+
+/* Page */
+.page {
+  padding: 24px 32px 48px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.diagram-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--aws-text);
+  margin-bottom: 4px;
+}
+
+.diagram-sub {
+  font-size: 12px;
+  color: var(--aws-text-light);
+  margin-bottom: 24px;
+}
+
+/* Zones */
+.zone {
+  border-radius: 4px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.zone-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 3px 3px 0 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.zone-body {
+  padding: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  border-radius: 0 0 4px 4px;
+}
+
+/* Zone themes */
+.z-ext { background: var(--aws-ext-bg); border: 2px dashed var(--aws-ext-border); }
+.z-ext .zone-header { background: #f8f8f8; color: var(--aws-text-light); border-bottom: 1px solid var(--aws-border); }
+
+.z-cloud { background: var(--aws-cloud-bg); border: 2px solid var(--aws-cloud-border); }
+.z-cloud > .zone-header { background: var(--aws-cloud-border); color: #fff; }
+
+.z-k8s { background: var(--aws-k8s-bg); border: 2px solid var(--aws-k8s-border); }
+.z-k8s > .zone-header { background: var(--aws-k8s-border); color: #fff; }
+
+.z-security { background: var(--aws-security-bg); border: 1px solid var(--aws-security-border); }
+.z-security .zone-header { background: var(--aws-security-border); color: #fff; }
+
+.z-ms { background: var(--aws-ms-bg); border: 1px solid var(--aws-ms-border); }
+.z-ms .zone-header { background: var(--aws-ms-border); color: #fff; }
+
+.z-async { background: var(--aws-async-bg); border: 1px solid var(--aws-async-border); }
+.z-async .zone-header { background: var(--aws-async-border); color: #fff; }
+
+.z-obs { background: var(--aws-obs-bg); border: 1px solid var(--aws-obs-border); }
+.z-obs .zone-header { background: var(--aws-obs-border); color: #fff; }
+
+.z-db { background: var(--aws-db-bg); border: 2px solid var(--aws-db-border); }
+.z-db > .zone-header { background: var(--aws-db-border); color: #fff; }
+
+/* AWS Service Card */
+.svc-card {
+  background: #fff;
+  border: 1px solid var(--aws-border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  min-width: 130px;
+  max-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  transition: box-shadow 0.15s, transform 0.15s;
+  cursor: default;
+}
+
+.svc-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+  transform: translateY(-1px);
+}
+
+.svc-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+/* Icon colors by AWS category */
+.icon-compute { background: #FF9900; }
+.icon-network { background: #8C4FFF; }
+.icon-security { background: #DD3522; }
+.icon-messaging { background: #FF4F8B; }
+.icon-storage { background: #3F8624; }
+.icon-database { background: #1A5276; }
+.icon-dynamo { background: #3F8624; }
+.icon-obs { background: #E05D44; }
+.icon-ext { background: #AAB7B8; }
+.icon-user { background: #147EBA; }
+.icon-go { background: #00ACD7; }
+.icon-java { background: #E84142; }
+.icon-otel { background: #425CC7; }
+
+.svc-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--aws-text);
+  line-height: 1.2;
+}
+
+.svc-desc {
+  font-size: 10px;
+  color: var(--aws-text-light);
+  line-height: 1.3;
+}
+
+.svc-tag {
+  display: inline-block;
+  font-size: 9px;
+  padding: 2px 5px;
+  border-radius: 2px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+  width: fit-content;
+}
+
+.tag-orange { background: #FFF3E0; color: #E65100; border: 1px solid #FFB74D; }
+.tag-blue { background: #E3F2FD; color: #0D47A1; border: 1px solid #64B5F6; }
+.tag-green { background: #E8F5E9; color: #1B5E20; border: 1px solid #81C784; }
+.tag-red { background: #FFEBEE; color: #B71C1C; border: 1px solid #EF9A9A; }
+.tag-purple { background: #EDE7F6; color: #4A148C; border: 1px solid #CE93D8; }
+.tag-teal { background: #E0F2F1; color: #004D40; border: 1px solid #80CBC4; }
+.tag-cyan { background: #E0F7FA; color: #006064; border: 1px solid #80DEEA; }
+
+/* Layout helpers */
+.full-width { width: 100%; }
+.flex-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.nested-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; width: 100%; }
+
+@media (max-width: 900px) {
+  .nested-cols { grid-template-columns: 1fr 1fr; }
+}
+
+/* Routing table */
+.routing-section {
+  margin-top: 24px;
+}
+
+.routing-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--aws-text);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.routing-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--aws-border);
+}
+
+.routing-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid var(--aws-border);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+
+.routing-table th {
+  background: var(--aws-dark);
+  color: #fff;
+  text-align: left;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.routing-table td {
+  padding: 8px 14px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--aws-border);
+  vertical-align: middle;
+}
+
+.routing-table tr:last-child td { border-bottom: none; }
+.routing-table tr:nth-child(even) td { background: #FAFAFA; }
+.routing-table tr:hover td { background: #EBF5FB; }
+
+.route-path {
+  font-family: 'Courier New', monospace;
+  background: var(--aws-light-bg);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: var(--aws-dark);
+  font-weight: 600;
+  border: 1px solid var(--aws-border);
+}
+
+/* Flows */
+.flows-section {
+  margin-top: 24px;
+}
+
+.flow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 8px;
+}
+
+.flow-row {
+  background: #fff;
+  border: 1px solid var(--aws-border);
+  border-left: 3px solid var(--aws-orange);
+  border-radius: 0 4px 4px 0;
+  padding: 9px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+}
+
+.flow-row.async { border-left-color: #F39C12; }
+.flow-row.obs { border-left-color: #8E44AD; }
+.flow-row.ext { border-left-color: #1A73E8; }
+
+.flow-src { font-weight: 700; color: var(--aws-text); }
+.flow-arr { color: var(--aws-orange); font-weight: 700; font-size: 14px; }
+.flow-arr.async { color: #F39C12; }
+.flow-arr.obs { color: #8E44AD; font-style: italic; }
+.flow-dst { color: var(--aws-text-light); }
+.flow-proto {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+.proto-feign { background: #EDE7F6; color: #4A148C; }
+.proto-http { background: #E8F5E9; color: #1B5E20; }
+.proto-async { background: #FFF3E0; color: #E65100; }
+.proto-otel { background: #E3F2FD; color: #0D47A1; }
+
+/* Legend */
+.legend {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid var(--aws-border);
+  border-radius: 4px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--aws-text-light);
+}
+
+.legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* DB grid */
+.db-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .db-grid { grid-template-columns: repeat(3, 1fr); }
+  .page { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="aws-logo">
+    <span class="aws-logo-mark">aws</span>
+  </div>
+  <div class="topbar-divider"></div>
+  <span class="aws-logo-text">Management Console</span>
+  <div class="topbar-divider"></div>
+  <span class="topbar-title">Architecture Diagram</span>
+  <span class="topbar-badge">OFICINA</span>
+</div>
+
+<div class="page">
+  <div class="diagram-title">Oficina — System Architecture</div>
+  <div class="diagram-sub">Multi-service application on AWS EKS · Last updated Feb 2025</div>
+
+  <!-- External World -->
+  <div class="zone z-ext">
+    <div class="zone-header">🌐 External / Client</div>
+    <div class="zone-body">
+      <div class="svc-card">
+        <div class="svc-icon icon-user">👤</div>
+        <div class="svc-name">Usuário / Cliente</div>
+        <div class="svc-desc">Origem das requisições</div>
+        <span class="svc-tag tag-blue">CLIENT</span>
+      </div>
+      <div class="svc-card">
+        <div class="svc-icon icon-ext">💳</div>
+        <div class="svc-name">Mercado Pago</div>
+        <div class="svc-desc">Payment Gateway API</div>
+        <span class="svc-tag tag-orange">EXTERNAL API</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- AWS Cloud -->
+  <div class="zone z-cloud">
+    <div class="zone-header">☁️ AWS Cloud — us-east-1</div>
+    <div class="zone-body" style="flex-direction:column; gap:14px">
+
+      <!-- Routing layer -->
+      <div class="flex-row">
+        <div class="svc-card">
+          <div class="svc-icon icon-network">🔀</div>
+          <div class="svc-name">AWS API Gateway</div>
+          <div class="svc-desc">HTTP entry point & auth</div>
+          <span class="svc-tag tag-purple">API GATEWAY</span>
+        </div>
+        <div class="svc-card">
+          <div class="svc-icon icon-network">⚖️</div>
+          <div class="svc-name">EKS Load Balancer</div>
+          <div class="svc-desc">Ingress traffic routing</div>
+          <span class="svc-tag tag-purple">ELB / NLB</span>
+        </div>
+      </div>
+
+      <!-- K8s Cluster -->
+      <div class="zone z-k8s full-width">
+        <div class="zone-header">☸️ Kubernetes Cluster — Amazon EKS</div>
+        <div class="zone-body" style="flex-direction:column; gap:12px">
+
+          <div class="nested-cols">
+
+            <!-- Security -->
+            <div class="zone z-security">
+              <div class="zone-header">🔐 Security Layer</div>
+              <div class="zone-body">
+                <div class="svc-card">
+                  <div class="svc-icon icon-security">🛡️</div>
+                  <div class="svc-name">Auth Service</div>
+                  <div class="svc-desc">Autenticação e autorização da oficina</div>
+                  <span class="svc-tag tag-red">JAVA · Spring</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Async -->
+            <div class="zone z-async">
+              <div class="zone-header">📨 Async Communication</div>
+              <div class="zone-body">
+                <div class="svc-card">
+                  <div class="svc-icon icon-messaging">📢</div>
+                  <div class="svc-name">AWS SNS</div>
+                  <div class="svc-desc">Topic: payment-processed</div>
+                  <span class="svc-tag tag-orange">FANOUT</span>
+                </div>
+                <div class="svc-card">
+                  <div class="svc-icon icon-messaging">📬</div>
+                  <div class="svc-name">AWS SQS</div>
+                  <div class="svc-desc">Queue: payment-queue</div>
+                  <span class="svc-tag tag-orange">POLLING</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Observability -->
+            <div class="zone z-obs">
+              <div class="zone-header">📊 Observability</div>
+              <div class="zone-body">
+                <div class="svc-card">
+                  <div class="svc-icon icon-otel">🔭</div>
+                  <div class="svc-name">OpenTelemetry</div>
+                  <div class="svc-desc">Collector — traces & metrics</div>
+                  <span class="svc-tag tag-blue">OTel</span>
+                </div>
+                <div class="svc-card">
+                  <div class="svc-icon icon-obs">🐶</div>
+                  <div class="svc-name">Datadog</div>
+                  <div class="svc-desc">Agent — APM & logs</div>
+                  <span class="svc-tag tag-purple">APM</span>
+                </div>
+                <div class="svc-card">
+                  <div class="svc-icon icon-obs">📈</div>
+                  <div class="svc-name">Prometheus</div>
+                  <div class="svc-desc">Metrics scraping</div>
+                  <span class="svc-tag tag-orange">METRICS</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Microservices -->
+          <div class="zone z-ms full-width">
+            <div class="zone-header">⚙️ Microservices</div>
+            <div class="zone-body">
+              <div class="svc-card">
+                <div class="svc-icon icon-java">🔧</div>
+                <div class="svc-name">Ordem de Serviço</div>
+                <div class="svc-desc">Gestão de OS e workflows</div>
+                <span class="svc-tag tag-red">JAVA · Spring Boot</span>
+              </div>
+              <div class="svc-card">
+                <div class="svc-icon icon-java">📦</div>
+                <div class="svc-name">Catálogo</div>
+                <div class="svc-desc">Peças e serviços</div>
+                <span class="svc-tag tag-red">JAVA · Spring Boot</span>
+              </div>
+              <div class="svc-card">
+                <div class="svc-icon icon-java">📋</div>
+                <div class="svc-name">Orçamento</div>
+                <div class="svc-desc">Geração de orçamentos</div>
+                <span class="svc-tag tag-red">JAVA · Spring Boot</span>
+              </div>
+              <div class="svc-card">
+                <div class="svc-icon icon-java">👥</div>
+                <div class="svc-name">Cliente & Veículo</div>
+                <div class="svc-desc">CRM e cadastro de veículos</div>
+                <span class="svc-tag tag-red">JAVA · Spring Boot</span>
+              </div>
+              <div class="svc-card">
+                <div class="svc-icon icon-go">💰</div>
+                <div class="svc-name">Pagamento</div>
+                <div class="svc-desc">Processamento de pagamentos</div>
+                <span class="svc-tag tag-cyan">GO · Fiber</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Persistence -->
+      <div class="zone z-db full-width">
+        <div class="zone-header">🗄️ Persistence Layer — Amazon RDS &amp; DynamoDB</div>
+        <div class="zone-body">
+          <div class="db-grid">
+            <div class="svc-card">
+              <div class="svc-icon icon-database">🐘</div>
+              <div class="svc-name">PostgreSQL</div>
+              <div class="svc-desc">Auth DB</div>
+              <span class="svc-tag tag-blue">RDS</span>
+            </div>
+            <div class="svc-card">
+              <div class="svc-icon icon-database">🐘</div>
+              <div class="svc-name">PostgreSQL</div>
+              <div class="svc-desc">Ordem Serviço DB</div>
+              <span class="svc-tag tag-blue">RDS</span>
+            </div>
+            <div class="svc-card">
+              <div class="svc-icon icon-database">🐘</div>
+              <div class="svc-name">PostgreSQL</div>
+              <div class="svc-desc">Catálogo DB</div>
+              <span class="svc-tag tag-blue">RDS</span>
+            </div>
+            <div class="svc-card">
+              <div class="svc-icon icon-database">🐘</div>
+              <div class="svc-name">PostgreSQL</div>
+              <div class="svc-desc">Orçamento DB</div>
+              <span class="svc-tag tag-blue">RDS</span>
+            </div>
+            <div class="svc-card">
+              <div class="svc-icon icon-database">🐘</div>
+              <div class="svc-name">PostgreSQL</div>
+              <div class="svc-desc">Cliente DB</div>
+              <span class="svc-tag tag-blue">RDS</span>
+            </div>
+            <div class="svc-card">
+              <div class="svc-icon icon-dynamo">⚡</div>
+              <div class="svc-name">DynamoDB</div>
+              <div class="svc-desc">Pagamento DB</div>
+              <span class="svc-tag tag-green">DynamoDB</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- API Routing Table -->
+  <div class="routing-section">
+    <div class="routing-title">API Routing — ELB Ingress Rules</div>
+    <table class="routing-table">
+      <thead>
+        <tr>
+          <th>Path</th>
+          <th>Target Service</th>
+          <th>Protocol</th>
+          <th>Auth Required</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="route-path">/logins</span> <span class="route-path">/usuarios</span></td>
+          <td>Auth Service</td>
+          <td><span class="svc-tag tag-red">HTTPS</span></td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><span class="route-path">/clientes</span></td>
+          <td>Cliente & Veículo Service</td>
+          <td><span class="svc-tag tag-red">HTTPS</span></td>
+          <td><span class="svc-tag tag-purple">JWT</span></td>
+        </tr>
+        <tr>
+          <td><span class="route-path">/orcamentos</span></td>
+          <td>Orçamento Service</td>
+          <td><span class="svc-tag tag-red">HTTPS</span></td>
+          <td><span class="svc-tag tag-purple">JWT</span></td>
+        </tr>
+        <tr>
+          <td><span class="route-path">/ordens-servicos</span></td>
+          <td>Ordem de Serviço Service</td>
+          <td><span class="svc-tag tag-red">HTTPS</span></td>
+          <td><span class="svc-tag tag-purple">JWT</span></td>
+        </tr>
+        <tr>
+          <td><span class="route-path">/v1/pagamentos</span></td>
+          <td>Pagamento Service</td>
+          <td><span class="svc-tag tag-red">HTTPS</span></td>
+          <td><span class="svc-tag tag-purple">JWT</span></td>
+        </tr>
+        <tr>
+          <td><span class="route-path">/pecas</span> <span class="route-path">/servicos</span></td>
+          <td>Catálogo Service</td>
+          <td><span class="svc-tag tag-red">HTTPS</span></td>
+          <td><span class="svc-tag tag-purple">JWT</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Communication Flows -->
+  <div class="flows-section">
+    <div class="routing-title" style="margin-top:24px">Communication Flows</div>
+    <div class="flow-grid">
+      <div class="flow-row">
+        <span class="flow-src">Usuário</span>
+        <span class="flow-arr">→</span>
+        <span class="flow-dst">API Gateway → ELB</span>
+        <span class="flow-proto proto-http">HTTPS</span>
+      </div>
+      <div class="flow-row">
+        <span class="flow-src">OrdemServico</span>
+        <span class="flow-arr">→</span>
+        <span class="flow-dst">Cliente, Catálogo, Orçamento, Pagamento</span>
+        <span class="flow-proto proto-feign">Feign HTTP</span>
+      </div>
+      <div class="flow-row">
+        <span class="flow-src">Orçamento</span>
+        <span class="flow-arr">→</span>
+        <span class="flow-dst">OrdemServico</span>
+        <span class="flow-proto proto-feign">Webhook/Feign</span>
+      </div>
+      <div class="flow-row ext">
+        <span class="flow-src">Pagamento</span>
+        <span class="flow-arr">→</span>
+        <span class="flow-dst">Mercado Pago API</span>
+        <span class="flow-proto proto-http">HTTPS</span>
+      </div>
+      <div class="flow-row async">
+        <span class="flow-src">Pagamento</span>
+        <span class="flow-arr async">→</span>
+        <span class="flow-dst">SNS → SQS → OrdemServico</span>
+        <span class="flow-proto proto-async">Async</span>
+      </div>
+      <div class="flow-row obs">
+        <span class="flow-src">All Services</span>
+        <span class="flow-arr obs">- - →</span>
+        <span class="flow-dst">OTel → Datadog, Prometheus</span>
+        <span class="flow-proto proto-otel">OTel</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend" style="margin-top:24px">
+    <div class="legend-item"><div class="legend-dot" style="background:#147EBA"></div> AWS Managed Service</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#E84142"></div> Java / Spring Boot</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#00ACD7"></div> Go / Fiber</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1A5276"></div> Amazon RDS PostgreSQL</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#3F8624"></div> Amazon DynamoDB</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#FF4F8B"></div> AWS Messaging (SNS/SQS)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#425CC7"></div> OpenTelemetry</div>
+  </div>
+</div>
+
+</body>
+</html>
