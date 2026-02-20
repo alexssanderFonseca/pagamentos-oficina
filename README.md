@@ -75,3 +75,7 @@ O projeto conta com pipelines automatizados no GitHub Actions:
 
 ---
 Desenvolvido por Alex Marques Fonseca
+
+
+## Arquitetura
+Você pode visualizar o desenho de arquitetura do sistema aqui: [Desenho de Arquitetura AWS](docs/aws.html)

@@ -74,4 +74,7 @@ jobs:
           kustomize build ${{ inputs.k8s-overlay-path }} | 
           sed "s|MERCADOPAGO_ACCESS_TOKEN_PLACEHOLDER|$(echo -n "${{ secrets.MERCADOPAGO_ACCESS_TOKEN }}" | base64 -w 0)|g" | 
           sed "s|MERCADOPAGO_WEBHOOK_SECRET_PLACEHOLDER|$(echo -n "${{ secrets.MERCADOPAGO_WEBHOOK_SECRET }}" | base64 -w 0)|g" | 
+          sed "s|AWS_ACCESS_KEY_ID_PLACEHOLDER|$(echo -n "${{ secrets.AWS_ACCESS_KEY_ID }}" | base64 -w 0)|g" | 
+          sed "s|AWS_SECRET_ACCESS_KEY_PLACEHOLDER|$(echo -n "${{ secrets.AWS_SECRET_ACCESS_KEY }}" | base64 -w 0)|g" | 
+          sed "s|AWS_SESSION_TOKEN_PLACEHOLDER|$(echo -n "${{ secrets.AWS_SESSION_TOKEN }}" | base64 -w 0)|g" | 
           kubectl apply -f -
